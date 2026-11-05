@@ -10,7 +10,14 @@ const liveRows = [...snap, { id: 'x1', n: 'מעבדת כימיה', a: 'diagnose'
 const stub = (u) => (u.includes('/rest/v1/aoa_apps') ? { status: 200, contentType: 'application/json', body: JSON.stringify(liveRows) } : null);
 (async () => {
   const { browser, page, errors } = await open(URL, {}, stub);
+  await page.waitForSelector('.h-title');
+  ok((await page.locator('.nolli-plan .plot').count()) === 98, 'home: a plot for every domain and action');
+  await page.locator('.nolli-plan .plot').first().hover();
+  ok(await page.locator('.h-hover').isVisible(), 'home: hovering a plot names it');
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/desk-home.png` });
+  await page.locator('.h-cta .go').click();
   await page.waitForSelector('.n-row');
+  ok(page.url().includes('#/map'), 'home CTA opens the map');
   await page.waitForSelector('.src-state.s-live');
   ok((await page.locator('.src-state').innerText()).includes('141'), 'live portfolio replaces the snapshot');
   ok(await page.locator('ai-menu .logo').isVisible(), 'A&I logo button in the top bar');
@@ -43,12 +50,12 @@ const stub = (u) => (u.includes('/rest/v1/aoa_apps') ? { status: 200, contentTyp
   ok(errors.length === 0, `no page errors ${errors.join('|')}`);
   await browser.close();
 
-  const off = await open(URL, {}, null);
+  const off = await open(URL + '#/map', {}, null);
   await off.page.waitForSelector('.src-state.s-snapshot');
   ok((await off.page.locator('.src-state').innerText()).includes('139'), 'offline: falls back to the snapshot and says so');
   await off.browser.close();
 
-  const mob = await open(URL, { viewport: { width: 390, height: 844 }, reduced: true }, stub);
+  const mob = await open(URL + '#/map', { viewport: { width: 390, height: 844 }, reduced: true }, stub);
   await mob.page.waitForSelector('.n-row');
   const fm = await fit(mob.page); ok(!fm.hscroll, `phone: no horizontal scroll ${JSON.stringify(fm)}`);
   if (SHOTS) await mob.page.screenshot({ path: `${SHOTS}/mob.png` });

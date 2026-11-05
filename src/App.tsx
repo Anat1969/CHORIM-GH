@@ -2,13 +2,14 @@ import { useEffect, useMemo, useState } from 'react';
 import { ACTIONS, APP_OF_APP, DISCS, SNAPSHOT, SNAPSHOT_DATE, analyse, anchors, loadLive, pct, promptFor, yearLabel, type App as AppT, type Hit } from './engine';
 import { Rich } from './Rich';
 import { Dialog, InfoIcon } from './Dialog';
+import Home from './Home';
 
 const KEY = 'chorim.rejected.v1';
 const loadRejected = (): string[] => { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch { return []; } };
 const hitKey = (h: Hit) => `${h.app.id}:${h.dm}`;
 const FAMILY_ORDER = ['ruach', 'sechel', 'regesh', 'yetzer'];
 const CORE = ACTIONS.filter((a) => a.id !== 'other');
-const readHash = () => { const sp = new URLSearchParams(location.hash.split('?')[1] || ''); return { d: sp.get('d'), a: sp.get('a') }; };
+const readHash = () => { const sp = new URLSearchParams(location.hash.split('?')[1] || ''); return { d: sp.get('d'), a: sp.get('a'), home: !location.hash.startsWith('#/map') && !sp.get('d') }; };
 
 export default function App() {
   const init = readHash();
@@ -18,11 +19,12 @@ export default function App() {
   const [sel, setSel] = useState<string | null>(init.d);
   const [act, setAct] = useState<string | null>(init.a);
   const [info, setInfo] = useState(false);
+  const [home, setHome] = useState<boolean>(init.home);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => { loadLive().then((x) => { if (x && x.length) { setApps(x); setLive('live'); } else setLive('snapshot'); }); }, []);
   useEffect(() => { try { localStorage.setItem(KEY, JSON.stringify(rejected)); setSaved(true); const t = setTimeout(() => setSaved(false), 1200); return () => clearTimeout(t); } catch { /* */ } }, [rejected]);
-  useEffect(() => { const sp = new URLSearchParams(); if (sel) sp.set('d', sel); if (act) sp.set('a', act); history.replaceState(null, '', `#/${sp.toString() ? '?' + sp : ''}`); }, [sel, act]);
+  useEffect(() => { const sp = new URLSearchParams(); if (sel) sp.set('d', sel); if (act) sp.set('a', act); history.replaceState(null, '', home ? '#/' : `#/map${sp.toString() ? '?' + sp : ''}`); }, [sel, act, home]);
 
   const raw = useMemo(() => analyse(apps), [apps]);
   // human check: a rejected match leaves the map, and the share kept is the tool's measured precision
@@ -64,7 +66,7 @@ export default function App() {
     <div className="app-shell keep-mobile">
       <header className="topbar">
         <div className="topbar-in">
-          <a className="brand" href="#/" onClick={(e) => { e.preventDefault(); setSel(null); setAct(null); }}><img src="/icon.svg" alt="" /><span>החורים בתיק</span></a>
+          <a className="brand" href="#/" onClick={(e) => { e.preventDefault(); setSel(null); setAct(null); setHome(true); }}><img src="/icon.svg" alt="" /><span>החורים בתיק</span></a>
           <nav className="tabs" aria-label="מצב הנתונים"><span className={`src-state s-${live}`}>{live === 'live' ? <>נתונים חיים · <span className="num">{apps.length}</span> אפליקציות</> : live === 'snapshot' ? <>תמונת מצב מ-<span className="num">{SNAPSHOT_DATE}</span> · <span className="num">{apps.length}</span> אפליקציות</> : 'טוען את התיק'}</span></nav>
           <div className="bar-end">
             <button className="icon-btn press" aria-label="איך זה עובד" title="איך זה עובד" onClick={() => setInfo(true)}><InfoIcon /></button>
@@ -73,6 +75,9 @@ export default function App() {
         </div>
       </header>
 
+      {home ? (
+        <Home m={m} live={live === 'live' ? 'נתונים חיים' : live === 'snapshot' ? `תמונה מ-${SNAPSHOT_DATE}` : 'טוען'} open={(d, a) => { setSel(d); setAct(a || null); setHome(false); }} go={() => setHome(false)} />
+      ) : (
       <main className="app-main focus-aside nolli-main">
         <section className="board">
           <div className="lens">
@@ -136,6 +141,7 @@ export default function App() {
           {row ? <DomainPanel row={row} act={act} setAct={setAct} rejected={rejected} setRejected={setRejected} /> : <Ranking m={m} pick={(d) => setSel(d)} />}
         </aside>
       </main>
+      )}
       {info && <Method onClose={() => setInfo(false)} />}
     </div>
   );
