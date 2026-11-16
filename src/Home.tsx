@@ -7,7 +7,7 @@ const FAMILY_ORDER = ['ruach', 'sechel', 'regesh', 'yetzer'];
 const CORE = ACTIONS.filter((a) => a.id !== 'other');
 
 /** A town plan in the manner of Nolli: every knowledge domain is a street block, every action a plot. Built is black, open is white. */
-export default function Home({ m, live, open, go }: { m: Analysis; live: string; open: (d: string, a?: string) => void; go: () => void }) {
+export default function Home({ m, live, open, go, to }: { m: Analysis; live: string; open: (d: string, a?: string) => void; go: () => void; to: (s: 'map' | 'rank') => void }) {
   const [hover, setHover] = useState<{ d: string; a: string } | null>(null);
   const [lg, setLg] = useState<'built' | 'void' | 'hole' | null>(null);
   const rows = FAMILY_ORDER.flatMap((f) => m.rows.filter((r) => r.d.family === f));
@@ -31,8 +31,8 @@ export default function Home({ m, live, open, go }: { m: Analysis; live: string;
           <p className="h-tone t-insight"><b>תובנה</b><span><mark className="insight">כמו בעיר: המגרש הפנוי הוא העתודה.</mark></span></p>
         </div>
         <div className="h-cta">
-          <button className="btn press go" onClick={go}>למפת החורים</button>
-          <button className="btn press" onClick={() => open(top.d.id)}>לבנות את החור הגדול: {top.d.he}</button>
+          <button className="btn press go" onClick={go}>מתחילים: איך זה עובד</button>
+          <button className="btn press" onClick={() => open(top.d.id)}>ישר לחור הגדול: {top.d.he}</button>
         </div>
       </section>
 
@@ -87,37 +87,18 @@ export default function Home({ m, live, open, go }: { m: Analysis; live: string;
         </div>
       </section>
 
-      <nav className="h-cards" aria-label="מפת התוכן">
-        <button className="h-card press" onClick={go}>
-          <p className="label">01 · מפת החורים</p><strong>תחום מול פעולה, עם דירוג</strong><span className="d">חלק בידע מול חלק בתיק.</span>
-          <span className="num h-card-n">{filled}/{total}</span>
-        </button>
-        <button className="h-card press" onClick={() => open(top.d.id)}>
-          <p className="label">02 · החור הגדול</p><strong>{top.d.he}</strong><span className="d"><span className="num">{top.k}</span> גילויים, <span className="num">{top.hits.length}</span> אפליקציות. פרומפט מוכן.</span>
-          <span className="num h-card-n">+{(top.gap * 100).toFixed(1)}</span>
-        </button>
-        <button className="h-card press" onClick={() => open('architecture')}>
-          <p className="label">03 · הצד הצפוף</p><strong>אדריכלות</strong><span className="d">הכי בנוי בתיק. בדקי את ההתאמות שלו.</span>
-          <span className="num h-card-n">{m.rows.find((r) => r.d.id === 'architecture')?.hits.length}</span>
-        </button>
+      <nav className="h-route" aria-label="המסלול">
+        {[
+          { n: '1', t: 'השיטה', d: 'מילון, חשבון ובדיקה, עם דוגמה חיה', go: go },
+          { n: '2', t: 'המפה', d: `${filled} מתוך ${total} מגרשים בנויים`, go: () => to('map') },
+          { n: '3', t: 'הדירוג', d: <>החוסר הגדול: {top.d.he}, <span className="num">+{(top.gap * 100).toFixed(1)}</span></>, go: () => to('rank') },
+          { n: '4', t: 'תחום ופרומפט', d: 'על מה לבנות, ופרומפט מוכן', go: () => open(top.d.id) },
+        ].map((s) => (
+          <button key={s.n} className="h-step press" onClick={s.go}>
+            <span className="num h-step-n">{s.n}</span><strong>{s.t}</strong><span className="d">{s.d}</span>
+          </button>
+        ))}
       </nav>
-
-      <section className="h-museum" aria-label="שכבת ידע">
-        <figure className="h-quote">
-          <span className="label">ציטוט</span>
-          <blockquote>"מגבלים חומר לכלי, אבל החלל הריק שבתוכו הוא שעושה אותו לשימושי."</blockquote>
-          <figcaption className="src">לאו דזה Laozi, טאו טה צ'ינג, פרק 11. תרגום חופשי.</figcaption>
-        </figure>
-        <div className="h-haiku">
-          <span className="label">הייקו</span>
-          <p>מגרש ריק בעיר</p><p>עשב בין שני בתים</p><p>שם יקום הבא</p>
-        </div>
-        <div className="h-city">
-          <span className="label">דוגמה מהעיר</span>
-          <p>בתוכנית מתאר של אשדוד, מגרש <strong>ביעוד עתידי</strong> הוא לא כישלון של התכנון אלא החלטה. כך גם כאן: חור הוא מגרש שעוד לא קיבל יעוד.</p>
-        </div>
-      </section>
-      <p className="h-foot">השראה: מפת רומא של ג'מבטיסטה נולי Giambattista Nolli, 1748. הבנוי בשחור, והמרחב הפתוח בלבן.</p>
     </main>
   );
 }
